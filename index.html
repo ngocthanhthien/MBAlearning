@@ -878,6 +878,54 @@ async function renderSearch(q){
 /* =========================================================
    SETTINGS
    ========================================================= */
+function renderApiKeyPanel(){
+  const panel=document.getElementById("apiKeyPanel"); if(!panel) return;
+  const saved=localStorage.getItem(LS.key)||"";
+  const hasSaved=!!saved;
+  panel.innerHTML=`
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;gap:8px;align-items:center">
+        <input id="apiKeyField" type="password" autocomplete="off" placeholder="Paste YouTube Data API v3 key\u2026"
+          value="${esc(saved)}"
+          style="flex:1;height:38px;border-radius:6px;background:var(--bg-2);border:1px solid var(--border-2);color:var(--txt);padding:0 12px;font-size:13px;font-family:monospace;outline:none"/>
+        <button id="apiKeyToggleShow" class="btn btn-ghost" style="white-space:nowrap;height:38px;padding:0 14px;font-size:12px" title="Show / Hide key">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button id="apiKeySaveBtn" class="btn btn-primary" style="height:36px">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"/></svg>
+          Save key
+        </button>
+        ${hasSaved?`<button id="apiKeyClearBtn" class="btn btn-ghost" style="height:36px;color:#ff5a63;border-color:rgba(229,9,20,.4)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+          Remove key
+        </button>`:""}
+      </div>
+      ${hasSaved
+        ?`<p style="font-size:12px;color:var(--green);display:flex;align-items:center;gap:6px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"/></svg>API key saved in browser &mdash; live lessons will load automatically.</p>`
+        :`<p style="font-size:12px;color:var(--txt-3)">No API key saved yet. Videos will not load until you add one.
+          <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:underline;margin-left:4px">Get a key &#8599;</a></p>`}
+    </div>`;
+  const field=document.getElementById("apiKeyField");
+  document.getElementById("apiKeyToggleShow").onclick=()=>{
+    field.type=(field.type==="password")?"text":"password";
+  };
+  document.getElementById("apiKeySaveBtn").onclick=()=>{
+    const v=field.value.trim();
+    if(!v){ toast("Please paste your API key first"); return; }
+    localStorage.setItem(LS.key,v);
+    toast("\u2705 API key saved to browser");
+    renderApiKeyPanel();
+  };
+  const clearBtn=document.getElementById("apiKeyClearBtn");
+  if(clearBtn) clearBtn.onclick=()=>{
+    localStorage.removeItem(LS.key);
+    field.value="";
+    toast("API key removed");
+    renderApiKeyPanel();
+  };
+}
 function renderSettings(){
   const view=document.getElementById("view");
   const langOpt=(val,label,sub)=>`<label class="opt ${STATE.lang===val?'sel':''}" data-lang="${val}"><span class="radio">${STATE.lang===val?'<i></i>':''}</span><span><b>${label}</b><small>${sub}</small></span></label>`;
@@ -898,6 +946,11 @@ function renderSettings(){
       </div>
     </div>
     <div class="panel" style="margin-top:20px">
+      <h3 style="font-size:16px;font-weight:800;margin-bottom:6px">YouTube Data API Key</h3>
+      <p style="font-size:13px;color:var(--txt-2);margin-bottom:16px">Required to load live lessons from YouTube. Your key is stored only in this browser&#39;s localStorage and is never sent anywhere else.</p>
+      <div id="apiKeyPanel"></div>
+    </div>
+    <div class="panel" style="margin-top:20px">
       <h3 style="font-size:16px;font-weight:800;margin-bottom:14px">Learning Activity</h3>
       <div class="stat-grid" style="margin:0">
         <div class="stat"><div class="lbl">Videos Opened</div><div class="val">${STATE.activityCount||0}</div><div class="sub">total activity</div></div>
@@ -908,6 +961,7 @@ function renderSettings(){
     </div></div>`;
   view.querySelectorAll("[data-lang]").forEach(el=>el.onclick=()=>switchLanguage(el.dataset.lang));
   view.querySelectorAll("[data-open-in]").forEach(el=>el.onclick=()=>{ STATE.openIn=el.dataset.openIn; persist(); toast("Preference saved"); rerender(); });
+  renderApiKeyPanel();
 }
 async function switchLanguage(lang){
   if(STATE.lang===lang) return;
